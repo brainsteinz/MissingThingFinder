@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Campus Finder | Lost & Found</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans"> <header class="bg-emerald-600 text-white p-6 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold"><i class="fas fa-search-location mr-2"></i>Campus Finder</h1>
+                <p class="text-emerald-100 text-sm">Pusat Informasi Barang Hilang & Temuan</p>
+            </div>
+            <button onclick="openModal()" class="bg-white text-emerald-600 px-5 py-2 rounded-full font-bold hover:shadow-lg transition-all active:scale-95">
+                <i class="fas fa-plus mr-2"></i>Buat Laporan
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <div class="flex flex-wrap gap-2 mb-8 justify-center">
+            <button onclick="setFilter('Semua')" class="filter-btn bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm">Semua</button>
+            <button onclick="setFilter('Elektronik')" class="filter-btn bg-white text-gray-600 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:bg-emerald-50">Elektronik</button>
+            <button onclick="setFilter('Dokumen')" class="filter-btn bg-white text-gray-600 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:bg-emerald-50">Dokumen</button>
+            <button onclick="setFilter('Kunci')" class="filter-btn bg-white text-gray-600 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:bg-emerald-50">Kunci</button>
+            <button onclick="setFilter('Lainnya')" class="filter-btn bg-white text-gray-600 px-4 py-2 rounded-full text-sm font-semibold shadow-sm hover:bg-emerald-50">Lainnya</button>
+        </div>
+
+        <div id="reportList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </main>
+
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="bg-emerald-600 p-5 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg">Detail Laporan</h3>
+                <button onclick="closeModal()" class="hover:rotate-90 transition-transform"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Status</label>
+                    <select id="statusInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Hilang">Saya Kehilangan Barang</option>
+                        <option value="Temuan">Saya Menemukan Barang</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Kategori</label>
+                        <select id="categoryInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Dokumen">Dokumen</option>
+                            <option value="Kunci">Kunci</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nama Barang</label>
+                        <input type="text" id="itemName" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Mis: iPhone 13">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Lokasi Terakhir/Temuan</label>
+                    <input type="text" id="location" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Mis: Perpustakaan Lantai 2">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Kontak Person</label>
+                    <input type="text" id="contact" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="WA: 0812... / IG: @nama">
+                </div>
+                <button onclick="submitReport()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">
+                    Publikasikan Laporan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Ambil data dari LocalStorage browser. Jika tidak ada data, buat array kosong [].
+        let reports = JSON.parse(localStorage.getItem('campusFinderV2')) || [];
+        // 2. Variabel global untuk menyimpan status filter yang sedang aktif.
+        let currentFilter = 'Semua';
+
+        // 3. Fungsi untuk menampilkan modal dengan menghapus class 'hidden'.
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        
+        // 4. Fungsi untuk menyembunyikan modal dengan menambah class 'hidden'.
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        /**
+         * FUNGSI MENGATUR FILTER
+         * Memperbarui UI tombol filter dan menampilkan data sesuai kategori.
+         */
+        function setFilter(category) {
+            currentFilter = category; // Ubah nilai kategori aktif sesuai tombol yang diklik.
+            
+            // Loop semua elemen dengan class 'filter-btn' untuk mengubah warna tombol yang aktif.
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === category) {
+                    // Jika tombol adalah kategori yang diklik, beri warna emerald (hijau).
+                    btn.classList.replace('bg-white', 'bg-emerald-600');
+                    btn.classList.replace('text-gray-600', 'text-white');
+                } else {
+                    // Jika bukan, kembalikan ke warna putih.
+                    btn.classList.replace('bg-emerald-600', 'bg-white');
+                    btn.classList.replace('text-white', 'text-gray-600');
+                }
+            });
+            renderReports(); // Panggil fungsi render ulang untuk menyaring tampilan.
+        }
+
+        /**
+         * FUNGSI SUBMIT DATA (INPUT BARU)
+         */
+        function submitReport() {
+            // Ambil semua value dari input form dan masukkan ke dalam satu objek 'data'.
+            const data = {
+                id: Date.now(), // Memberikan ID unik berdasarkan timestamp saat ini.
+                status: document.getElementById('statusInput').value, // Ambil status (Hilang/Temuan).
+                category: document.getElementById('categoryInput').value, // Ambil kategori terpilih.
+                name: document.getElementById('itemName').value.trim(), // Ambil nama barang (trim: hapus spasi kosong).
+                location: document.getElementById('location').value.trim(), // Ambil lokasi.
+                contact: document.getElementById('contact').value.trim(), // Ambil info kontak.
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) // Format tanggal ke Indonesia.
+            };
+
+            // Validasi: Jika ada field penting yang kosong, tampilkan peringatan dan hentikan proses.
+            if (!data.name || !data.location || !data.contact) return alert("Mohon lengkapi formulir!");
+
+            reports.unshift(data); // Masukkan objek data baru ke baris pertama (awal) array 'reports'.
+            saveData(); // Simpan array terbaru ke LocalStorage.
+            closeModal(); // Tutup popup modal.
+            
+            // Bersihkan isi input agar kosong kembali untuk input berikutnya.
+            document.getElementById('itemName').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('contact').value = '';
+        }
+
+        /**
+         * FUNGSI SIMPAN DATA
+         */
+        function saveData() {
+            // Mengubah array objek menjadi string JSON agar bisa disimpan di browser.
+            localStorage.setItem('campusFinderV2', JSON.stringify(reports));
+            renderReports(); // Update tampilan layar.
+        }
+
+        /**
+         * FUNGSI UTAMA: MENAMPILKAN DATA KE LAYAR (RENDER)
+         */
+        function renderReports() {
+            const listElement = document.getElementById('reportList'); // Ambil container tempat kartu-kartu.
+            listElement.innerHTML = ''; // Kosongkan dulu container agar tidak terjadi penumpukan data lama.
+
+            // Lakukan penyaringan (filtering) array 'reports' berdasarkan kategori aktif.
+            const filteredData = currentFilter === 'Semua' 
+                ? reports // Jika filter 'Semua', gunakan semua data.
+                : reports.filter(r => r.category === currentFilter); // Jika tidak, saring hanya yang kategorinya cocok.
+
+            // Jika setelah disaring datanya kosong, tampilkan pesan "Belum ada laporan".
+            if(filteredData.length === 0) {
+                listElement.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400">Belum ada laporan di kategori ini.</div>`;
+                return;
+            }
+
+            // Loop setiap data di dalam array hasil filter untuk dibuatkan kartu HTML-nya.
+            filteredData.forEach(report => {
+                const isHilang = report.status === 'Hilang'; // Cek apakah statusnya barang hilang atau bukan.
+                const card = document.createElement('div'); // Buat elemen <div> baru secara dinamis.
+                card.className = "bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300";
+                
+                // Isi konten kartu dengan data dari variabel 'report'.
+                card.innerHTML = `
+                    <div class="h-2 ${isHilang ? 'bg-orange-400' : 'bg-blue-400'}"></div> <div class="p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-md ${isHilang ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}">
+                                ${report.status.toUpperCase()}
+                            </span>
+                            <span class="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded">${report.category}</span>
+                        </div>
+                        <h3 class="font-bold text-gray-800 text-lg leading-tight mb-2">${report.name}</h3>
+                        <div class="space-y-2 mb-4">
+                            <p class="text-xs text-gray-500 flex items-center"><i class="fas fa-map-marker-alt w-5 text-emerald-500"></i> ${report.location}</p>
+                            <p class="text-xs text-gray-500 flex items-center"><i class="fas fa-calendar-alt w-5 text-emerald-500"></i> ${report.date}</p>
+                        </div>
+                        <div class="pt-3 border-t flex justify-between items-center">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] text-gray-400 font-bold uppercase">Hubungi</span>
+                                <span class="text-sm font-bold text-emerald-600">${report.contact}</span>
+                            </div>
+                            <button onclick="deleteReport(${report.id})" class="text-gray-300 hover:text-red-500 transition-colors">
+                                <i class="fas fa-check-circle text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                listElement.appendChild(card); // Masukkan kartu yang sudah jadi ke dalam container utama di layar.
+            });
+        }
+
+        /**
+         * FUNGSI HAPUS LAPORAN
+         */
+        function deleteReport(id) {
+            // Tampilkan dialog konfirmasi sebelum menghapus data.
+            if(confirm("Tandai sebagai selesai? Laporan akan dihapus dari publikasi.")) {
+                // Saring kembali array: ambil semua data KECUALI yang memiliki ID yang ingin dihapus.
+                reports = reports.filter(r => r.id !== id);
+                saveData(); // Simpan perubahan ke LocalStorage dan render ulang.
+            }
+        }
+
+        // Jalankan fungsi render pertama kali saat browser baru dibuka agar data lama muncul.
+        renderReports();
+    </script>
+</body>
+</html>
